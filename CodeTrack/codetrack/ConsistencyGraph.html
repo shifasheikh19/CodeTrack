@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recent 12-Month Consistency Graph</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+    }
+    #input-container {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    input {
+      padding: 10px;
+      font-size: 16px;
+      margin-right: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      color: white;
+      background-color: #007bff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #chart {
+      display: block;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>LeetCode & Codeforces Consistency Graph (Recent 12 Months)</h1>
+  <div id="input-container">
+    <input type="text" id="leetcode-username" placeholder="LeetCode Username" />
+    <input type="text" id="codeforces-username" placeholder="Codeforces Username" />
+    <button id="fetch-button">Fetch Data</button>
+  </div>
+  <svg id="chart" width="1100" height="500"></svg>
+
+  <script>
+    async function fetchLeetCodeData(username) {
+      const apiUrl = `https://leetcode-api-faisalshohag.vercel.app/${username}`;
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+      return Object.keys(data.submissionCalendar).map((timestamp) => ({
+        date: new Date(parseInt(timestamp, 10) * 1000),
+        value: data.submissionCalendar[timestamp] || 0,
+        source: "LeetCode",
+      }));
+    }
+
+    async function fetchCodeforcesData(username) {
+      const apiUrl = `https://codeforces.com/api/user.rating?handle=${username}`;
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+      if (data.status !== "OK") throw new Error("Codeforces data fetch failed");
+      return data.result.map((entry) => ({
+        date: new Date(entry.ratingUpdateTimeSeconds * 1000),
+        value: 1, // Each contest represents one activity
+        source: "Codeforces",
+      }));
+    }
+
+    function filterLast12Months(data) {
+      const now = new Date();
+      const lastYear = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
+      return data.filter((d) => d.date >= lastYear && d.date <= now);
+    }
+
+    function renderConsistencyGraph(data) {
+      // Prepare dimensions
+      const width = 1100;
+      const height = 500;
+      const margin = { top: 40, right: 40, bottom: 50, left: 50 };
+
+      const svg = d3.select("#chart");
+      svg.selectAll("*").remove(); // Clear previous content
+
+      // Set up scales
+      const xScale = d3
+        .scaleTime()
+        .domain(d3.extent(data, (d) => d.date))
+        .range([margin.left, width - margin.right]);
+
+      const yScale = d3
+        .scaleLinear()
+        .domain([0, d3.max(data, (d) => d.value)])
+        .range([height - margin.bottom, margin.top]);
+
+      const colorScale = d3
+        .scaleOrdinal()
+        .domain(["LeetCode", "Codeforces"])
+        .range(["#007bff", "#ff5722"]);
+
+      // Add axes
+      const xAxis = d3.axisBottom(xScale).ticks(12);
+      const yAxis = d3.axisLeft(yScale);
+
+      svg
+        .append("g")
+        .attr("transform", `translate(0, ${height - margin.bottom})`)
+        .call(xAxis);
+
+      svg
+        .append("g")
+        .attr("transform", `translate(${margin.left}, 0)`)
+        .call(yAxis);
+
+      // Group data by source
+      const groupedData = d3.group(data, (d) => d.source);
+
+      // Add line paths
+      groupedData.forEach((entries, source) => {
+        const line = d3
+          .line()
+          .x((d) => xScale(d.date))
+          .y((d) => yScale(d.value));
+
+        svg
+          .append("path")
+          .datum(entries)
+          .attr("fill", "none")
+          .attr("stroke", colorScale(source))
+          .attr("stroke-width", 2)
+          .attr("d", line);
+      });
+
+      // Add legend
+      const legend = svg
+        .append("g")
+        .attr("transform", `translate(${width - 200}, ${margin.top})`);
+
+      legend
+        .selectAll("rect")
+        .data(colorScale.domain())
+        .enter()
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", (d, i) => i * 20)
+        .attr("width", 15)
+        .attr("height", 15)
+        .attr("fill", (d) => colorScale(d));
+
+      legend
+        .selectAll("text")
+        .data(colorScale.domain())
+        .enter()
+        .append("text")
+        .attr("x", 20)
+        .attr("y", (d, i) => i * 20 + 12)
+        .text((d) => d);
+    }
+
+    document.getElementById("fetch-button").addEventListener("click", async () => {
+      const leetCodeUsername = document.getElementById("leetcode-username").value.trim();
+      const codeforcesUsername = document.getElementById("codeforces-username").value.trim();
+
+      if (!leetCodeUsername || !codeforcesUsername) {
+        alert("Please enter both usernames.");
+        return;
+      }
+
+      try {
+        const leetCodeData = await fetchLeetCodeData(leetCodeUsername);
+        const codeforcesData = await fetchCodeforcesData(codeforcesUsername);
+
+        const combinedData = [...leetCodeData, ...codeforcesData];
+        combinedData.sort((a, b) => a.date - b.date); // Sort by date
+
+        const filteredData = filterLast12Months(combinedData);
+        renderConsistencyGraph(filteredData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        alert("Failed to fetch data. Please check the usernames.");
+      }
+    });
+  </script>
+</body>
+</html>
+
+
+

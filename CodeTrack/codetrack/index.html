@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform Calendar Heatmap & Consistency Graph</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  
+     <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+    nav {
+      background-color: #aa7575;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      padding: 10px 20px;
+    }
+    nav a {
+      display: inline-block;
+      color: white;
+      padding: 14px 20px;
+      text-align: center;
+      text-decoration: none;
+    }
+    nav a:hover {
+      
+      color: black;
+    }
+    
+    .navbar-left {
+      display: flex;
+      align-items: center;
+    }
+    .navbar-left i {
+      color: white;
+      font-size: 24px;
+      margin-right: 10px;
+    }
+    .navbar-left .brand-name {
+      font-size: 24px;
+      color: white;
+    }
+    .navbar-left .brand-name span {
+      color: #530202; 
+    }
+    .content {
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    #input-container {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    input, select {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      color: white;
+      background-color: #995a5a;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #633333;
+    }
+    #calendar-heatmap, #chart {
+      display: block;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+
+    <nav>
+        <div class="navbar-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-sourceforge" viewBox="0 0 16 16">
+                <path d="M9.13 8.43c0-2.604-.929-3.79-1.42-4.24a.14.14 0 0 0-.232.123c.095 1.472-1.762 1.84-1.762 4.144v.013c0 1.404 1.065 2.55 2.376 2.55s2.377-1.146 2.377-2.55v-.013c0-.655-.246-1.282-.492-1.745-.055-.096-.191-.055-.178.027.451 1.99-.669 3.217-.669 1.69Z"/>
+                <path d="M6.303 13.923a.25.25 0 0 1-.164-.068L.061 7.789c-.081-.082-.081-.232 0-.327l6.42-6.407A.3.3 0 0 1 6.63 1h1.844c.109 0 .177.068.204.136a.22.22 0 0 1-.054.246L2.602 7.407a.304.304 0 0 0 0 .436l4.766 4.771c.082.082.082.232 0 .328l-.915.927a.3.3 0 0 1-.15.054m1.216 1.063a.22.22 0 0 1-.15-.382l6.036-6.025a.32.32 0 0 0 .096-.218.27.27 0 0 0-.096-.218l-4.78-4.771c-.082-.082-.082-.232 0-.327l.929-.927a.23.23 0 0 1 .163-.068c.069 0 .11.04.15.081l6.065 6.067c.04.04.068.095.068.163a.23.23 0 0 1-.068.164l-6.42 6.407A.23.23 0 0 1 9.35 15H7.52z"/>
+          </svg>
+          <div class="brand-name">
+            Code<span>Track</span>
+          </div>
+        </div>
+        <a href="#" class="active">Home</a>
+        <a href="#calendar">Calendar Heatmap</a>
+        <a href="#consistency">Consistency Graph</a>
+      </nav>
+
+  <div class="content">
+    <h1>Welcome To Code<span>Track</span></h1>
+
+    
+    <div id="calendar" style="display: block;">
+      <div id="input-container">
+        <select id="platform">
+          <option value="leetcode">LeetCode</option>
+          <option value="codeforces">Codeforces</option>
+        </select>
+        <input type="text" id="username" placeholder="Enter your username" />
+        <button id="fetch-button">Fetch Data</button>
+      </div>
+      
+      
+      <svg id="calendar-heatmap" width="1100" height="250"></svg>
+    </div>
+
+    
+    <div id="consistency" style="display: none;">
+      <div id="input-container">
+        <input type="text" id="leetcode-username" placeholder="LeetCode Username" />
+        <input type="text" id="codeforces-username" placeholder="Codeforces Username" />
+        <button id="fetch-graph-button">Fetch Consistency Data</button>
+      </div>
+
+      
+      <svg id="chart" width="1100" height="500"></svg>
+    </div>
+  </div>
+
+  <script>
+    
+    document.querySelectorAll('nav a').forEach(function(navLink) {
+      navLink.addEventListener('click', function() {
+        const targetSection = this.getAttribute('href').substring(1);
+        document.querySelectorAll('.content > div').forEach(function(section) {
+          section.style.display = section.id === targetSection ? 'block' : 'none';
+        });
+        document.querySelectorAll('nav a').forEach(function(link) {
+          link.classList.remove('active');
+        });
+        this.classList.add('active');
+      });
+    });
+
+    
+    function fetchLeetCodeData(username) {
+      const apiUrl = `https://leetcode-api-faisalshohag.vercel.app/${username}`;
+      fetch(apiUrl)
+        .then((response) => response.json())
+        .then((apiData) => {
+          const submissionCalendar = apiData.submissionCalendar;
+          const data = Object.keys(submissionCalendar).map((key) => ({
+            date: new Date(parseInt(key, 10) * 1000),
+            value: submissionCalendar[key] || 0,
+          }));
+          renderHeatmap(data, 0, 5);
+        })
+        .catch((error) => console.error("Error fetching LeetCode data:", error));
+    }
+
+    
+    function fetchCodeforcesData(username) {
+      const apiUrl = `https://codeforces.com/api/user.rating?handle=${username}`;
+      fetch(apiUrl)
+        .then((response) => response.json())
+        .then((apiData) => {
+          if (apiData.status !== "OK") {
+            alert("Error fetching data. Please check the username.");
+            return;
+          }
+          const ratingChanges = apiData.result;
+          const data = ratingChanges.map((contest) => ({
+            date: new Date(contest.ratingUpdateTimeSeconds * 1000),
+            value: contest.newRating - contest.oldRating,
+          }));
+          renderHeatmap(data, -100, 500);
+        })
+        .catch((error) => console.error("Error fetching Codeforces data:", error));
+    }
+
+    
+    function renderHeatmap(data, minValue, maxValue) {
+      const cellSize = 15;
+      const cellPadding = 3;
+      const startDate = d3.timeYear(new Date());
+      const endDate = new Date();
+      const width = 1100;
+      const height = 220;
+      const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"];
+      const monthFormat = d3.timeFormat("%b");
+
+      const colorScale = d3
+        .scaleQuantize()
+        .domain([minValue, maxValue])
+        .range(["#ebedf0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"]);
+
+      // Clear previous SVG
+      d3.select("#calendar-heatmap").selectAll("*").remove();
+
+      const svg = d3
+        .select("#calendar-heatmap")
+        .attr("viewBox", `0 0 ${width} ${height}`)
+        .append("g")
+        .attr("transform", "translate(50, 30)");
+
+      const daysInYear = d3.timeDays(startDate, endDate);
+      const groupedData = d3.group(data, (d) => d.date.toISOString().slice(0, 10));
+
+      svg
+        .selectAll(".day")
+        .data(daysInYear)
+        .enter()
+        .append("rect")
+        .attr("class", "day")
+        .attr("x", (d) => d3.timeWeek.count(startDate, d) * (cellSize + cellPadding))
+        .attr("y", (d) => d.getDay() * (cellSize + cellPadding))
+        .attr("width", cellSize)
+        .attr("height", cellSize)
+        .attr("rx", 4)
+        .attr("ry", 4)
+        .attr("fill", (d) =>
+          groupedData.has(d.toISOString().slice(0, 10))
+            ? colorScale(groupedData.get(d.toISOString().slice(0, 10))[0].value)
+            : "#ebedf0"
+        );
+
+      svg
+        .selectAll(".day-label")
+        .data(daysOfWeek)
+        .enter()
+        .append("text")
+        .attr("x", -20)
+        .attr("y", (d, i) => i * (cellSize + cellPadding) + cellSize / 1.5)
+        .style("text-anchor", "end")
+        .text((d) => d);
+
+      svg
+        .selectAll(".month")
+        .data(d3.timeMonths(startDate, endDate))
+        .enter()
+        .append("text")
+        .attr(
+          "x",
+          (d) => d3.timeWeek.count(startDate, d) * (cellSize + cellPadding) + cellSize / 2
+        )
+        .attr("y", -10)
+        .style("text-anchor", "middle")
+        .text((d) => monthFormat(d));
+
+      const legend = svg
+        .append("g")
+        .attr("transform", `translate(${width / 2 - 100}, ${height - 60})`);
+
+      legend
+        .selectAll("rect")
+        .data(colorScale.range())
+        .enter()
+        .append("rect")
+        .attr("x", (d, i) => i * 20)
+        .attr("y", 0)
+        .attr("width", 15)
+        .attr("height", 15)
+        .attr("rx", 4)
+        .attr("ry", 4)
+        .attr("fill", (d) => d);
+
+      legend
+        .selectAll("text")
+        .data(colorScale.range())
+        .enter()
+        .append("text")
+        .attr("x", (d, i) => i * 20 + 18)
+        .attr("y", 12)
+        .text((d, i) => (i === 0 ? minValue : `${Math.round(minValue + i * (maxValue - minValue) / 4)}`));
+    }
+
+    
+    async function fetchGraphData() {
+      const leetcodeUsername = document.getElementById("leetcode-username").value;
+      const codeforcesUsername = document.getElementById("codeforces-username").value;
+
+      try {
+        const leetcodeData = await fetchLeetCodeData(leetcodeUsername);
+        const codeforcesData = await fetchCodeforcesData(codeforcesUsername);
+
+        const combinedData = [...leetcodeData, ...codeforcesData];
+        const last12MonthsData = filterLast12Months(combinedData);
+        renderConsistencyGraph(last12MonthsData);
+      } catch (error) {
+        console.error("Error fetching graph data:", error);
+      }
+    }
+
+    
+    function filterLast12Months(data) {
+      const now = new Date();
+      const lastYear = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
+      return data.filter((d) => d.date >= lastYear && d.date <= now);
+    }
+
+    
+    function renderConsistencyGraph(data) {
+      const width = 1100, height = 500, margin = { top: 40, right: 40, bottom: 50, left: 50 };
+
+      const svg = d3.select("#chart");
+      svg.selectAll("*").remove();
+
+      const xScale = d3.scaleTime().domain(d3.extent(data, (d) => d.date)).range([margin.left, width - margin.right]);
+      const yScale = d3.scaleLinear().domain([0, d3.max(data, (d) => d.value)]).range([height - margin.bottom, margin.top]);
+
+      const colorScale = d3.scaleOrdinal().domain(["LeetCode", "Codeforces"]).range(["#007bff", "#ff5722"]);
+
+      const xAxis = d3.axisBottom(xScale).ticks(12);
+      const yAxis = d3.axisLeft(yScale);
+
+      svg.append("g").attr("transform", `translate(0, ${height - margin.bottom})`).call(xAxis);
+      svg.append("g").attr("transform", `translate(${margin.left}, 0)`).call(yAxis);
+
+      const groupedData = d3.group(data, (d) => d.source);
+
+      groupedData.forEach((entries, source) => {
+        const line = d3.line().x((d) => xScale(d.date)).y((d) => yScale(d.value));
+
+        svg.append("path").datum(entries).attr("fill", "none").attr("stroke", colorScale(source)).attr("stroke-width", 2).attr("d", line);
+      });
+    }
+
+    document.getElementById("fetch-button").addEventListener("click", () => {
+      const username = document.getElementById("username").value;
+      const platform = document.getElementById("platform").value;
+
+      if (platform === "leetcode") {
+        fetchLeetCodeData(username);
+      } else if (platform === "codeforces") {
+        fetchCodeforcesData(username);
+      }
+    });
+
+    document.getElementById("fetch-graph-button").addEventListener("click", fetchGraphData);
+  </script>
+
+</body>
+</html>
+
+
