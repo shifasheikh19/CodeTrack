@@ -9,7 +9,6 @@ CodeTrack is a web application that visualizes your coding consistency and activ
 Visualizes submission activity over a calendar year.
 Supports platforms like LeetCode and Codeforces.
 Displays a heatmap showing the frequency of submissions over time.
-
 **#Consistency Graph:**
 Fetches and displays your consistency data across different platforms.
 Provides insight into performance trends, such as changes in ratings over time.
