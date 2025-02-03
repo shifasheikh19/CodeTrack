@@ -20,9 +20,13 @@ Active internet connection to fetch data from external APIs.
 
 **Technologies Used**
 HTML: Structure of the web pages.
+
 CSS: Styling of the application.
+
 JavaScript: Dynamic functionality and API interaction.
+
 D3.js: Data visualization library for generating the heatmap and consistency graph.
+
 Bootstrap: For responsive and modern design elements.
 
 **External Libraries**
