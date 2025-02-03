@@ -27,10 +27,13 @@ Bootstrap: For responsive and modern design elements.
 
 **External Libraries**
 D3.js: D3.js for rendering heatmaps and charts.
+
 FontAwesome: For using icons in the navigation bar.
+
 Bootstrap: For responsive layout and components.
 
 **API Usage**
 LeetCode: Fetches submission data from LeetCode's unofficial API to visualize submission activity over a calendar year.
+
 Codeforces: Fetches rating changes from Codeforces API to visualize consistency over time.
 
