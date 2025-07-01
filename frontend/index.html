@@ -95,6 +95,65 @@
       color: #666;
       margin: 20px 0;
     }
+    .comparison-container {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      margin-top: 20px;
+    }
+    .user-section {
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      padding: 20px;
+      background-color: white;
+    }
+    .user-section h3 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #995a5a;
+    }
+    .stats-container {
+      display: flex;
+      justify-content: space-around;
+      margin: 20px 0;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .stat-box {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      min-width: 150px;
+      border: 1px solid #e9ecef;
+    }
+    .stat-box h4 {
+      margin: 0 0 10px 0;
+      color: #995a5a;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+    .stat-box .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
+    .platform-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .leetcode-badge {
+      background-color: #007bff;
+      color: white;
+    }
+    .codeforces-badge {
+      background-color: #ff5722;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -111,6 +170,7 @@
     </div>
     <a href="#calendar" class="active">Calendar Heatmap</a>
     <a href="#consistency">Consistency Graph</a>
+    <a href="#compare">Compare with Friend</a>
   </nav>
 
   <div class="content">
@@ -139,6 +199,27 @@
 
       <div id="graph-status"></div>
       <svg id="chart" width="1100" height="500"></svg>
+    </div>
+
+    <div id="compare" style="display: none;">
+      <h2 style="text-align: center; margin-bottom: 30px;">Compare Coding Activity with Friend</h2>
+      
+      <div id="input-container">
+        <div style="margin-bottom: 15px;">
+          <h4>Your Profile:</h4>
+          <input type="text" id="your-leetcode" placeholder="Your LeetCode Username" />
+          <input type="text" id="your-codeforces" placeholder="Your Codeforces Username" />
+        </div>
+        <div style="margin-bottom: 20px;">
+          <h4>Friend's Profile:</h4>
+          <input type="text" id="friend-leetcode" placeholder="Friend's LeetCode Username" />
+          <input type="text" id="friend-codeforces" placeholder="Friend's Codeforces Username" />
+        </div>
+        <button id="compare-button">Compare Profiles</button>
+      </div>
+
+      <div id="compare-status"></div>
+      <div id="comparison-results"></div>
     </div>
   </div>
 
@@ -218,6 +299,103 @@
         console.error("Error fetching Codeforces data:", error);
         throw error;
       }
+    }
+
+    // New function to fetch detailed user stats
+    async function fetchUserStats(leetcodeUsername, codeforcesUsername) {
+      const stats = {
+        leetcode: null,
+        codeforces: null,
+        totalActivity: 0,
+        last30Days: 0,
+        maxStreak: 0,
+        currentStreak: 0
+      };
+
+      try {
+        // Fetch LeetCode data
+        if (leetcodeUsername) {
+          const leetcodeData = await fetchLeetCodeDataForGraph(leetcodeUsername);
+          const totalSubmissions = leetcodeData.reduce((sum, day) => sum + day.value, 0);
+          const last30DaysData = filterLastNDays(leetcodeData, 30);
+          const last30DaysSubmissions = last30DaysData.reduce((sum, day) => sum + day.value, 0);
+          
+          stats.leetcode = {
+            totalSubmissions,
+            last30Days: last30DaysSubmissions,
+            data: leetcodeData
+          };
+          stats.totalActivity += totalSubmissions;
+          stats.last30Days += last30DaysSubmissions;
+        }
+
+        // Fetch Codeforces data
+        if (codeforcesUsername) {
+          const codeforcesData = await fetchCodeforcesDataForGraph(codeforcesUsername);
+          const totalContests = codeforcesData.length;
+          const last30DaysData = filterLastNDays(codeforcesData, 30);
+          const last30DaysContests = last30DaysData.length;
+          
+          stats.codeforces = {
+            totalContests,
+            last30Days: last30DaysContests,
+            data: codeforcesData
+          };
+          stats.totalActivity += totalContests;
+          stats.last30Days += last30DaysContests;
+        }
+
+        // Calculate streaks (simplified - based on LeetCode data if available)
+        if (stats.leetcode && stats.leetcode.data.length > 0) {
+          const streaks = calculateStreaks(stats.leetcode.data);
+          stats.maxStreak = streaks.maxStreak;
+          stats.currentStreak = streaks.currentStreak;
+        }
+
+      } catch (error) {
+        console.error("Error fetching user stats:", error);
+        throw error;
+      }
+
+      return stats;
+    }
+
+    function filterLastNDays(data, days) {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+      return data.filter(d => d.date >= cutoffDate);
+    }
+
+    function calculateStreaks(data) {
+      // Sort data by date
+      const sortedData = data.sort((a, b) => a.date - b.date);
+      
+      let maxStreak = 0;
+      let currentStreak = 0;
+      let tempStreak = 0;
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      for (let i = 0; i < sortedData.length; i++) {
+        const date = new Date(sortedData[i].date);
+        date.setHours(0, 0, 0, 0);
+        
+        if (sortedData[i].value > 0) {
+          tempStreak++;
+          maxStreak = Math.max(maxStreak, tempStreak);
+          
+          // Check if this contributes to current streak
+          const daysDiff = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+          if (daysDiff <= 1) {
+            currentStreak = Math.max(currentStreak, tempStreak);
+          }
+        } else {
+          tempStreak = 0;
+        }
+      }
+      
+      return { maxStreak, currentStreak };
     }
 
     // Updated heatmap functions with correct API URLs
@@ -338,10 +516,7 @@
         .data(d3.timeMonths(startDate, endDate))
         .enter()
         .append("text")
-        .attr(
-          "x",
-          (d) => d3.timeWeek.count(startDate, d) * (cellSize + cellPadding) + cellSize / 2
-        )
+        .attr("x", (d) => d3.timeWeek.count(startDate, d) * (cellSize + cellPadding) + cellSize / 2)
         .attr("y", -10)
         .style("text-anchor", "middle")
         .text((d) => monthFormat(d));
@@ -365,12 +540,12 @@
 
       legend
         .selectAll("text")
-        .data(colorScale.range())
-        .enter()
-        .append("text")
-        .attr("x", (d, i) => i * 20 + 18)
-        .attr("y", 12)
-        .text((d, i) => (i === 0 ? minValue : `${Math.round(minValue + i * (maxValue - minValue) / 4)}`));
+  .data([{value: "0", pos: 0}, {value: "4", pos: 4}])
+  .enter()
+  .append("text")
+  .attr("x", (d) => d.pos * 20 + (d.pos === 0 ? -5 : 20))
+  .attr("y", 13)
+  .text((d) => d.value);
     }
 
     // Fixed: Properly handle async data fetching for graph
@@ -505,6 +680,324 @@
         .text((d) => d);
     }
 
+    // New comparison functionality
+    async function compareProfiles() {
+      const yourLeetcode = document.getElementById("your-leetcode").value.trim();
+      const yourCodeforces = document.getElementById("your-codeforces").value.trim();
+      const friendLeetcode = document.getElementById("friend-leetcode").value.trim();
+      const friendCodeforces = document.getElementById("friend-codeforces").value.trim();
+
+      if (!yourLeetcode && !yourCodeforces) {
+        showStatus('compare-status', 'Please enter at least one of your usernames.', true);
+        return;
+      }
+
+      if (!friendLeetcode && !friendCodeforces) {
+        showStatus('compare-status', 'Please enter at least one of your friend\'s usernames.', true);
+        return;
+      }
+
+      showStatus('compare-status', 'Fetching data for comparison...');
+
+      try {
+        const [yourStats, friendStats] = await Promise.all([
+          fetchUserStats(yourLeetcode, yourCodeforces),
+          fetchUserStats(friendLeetcode, friendCodeforces)
+        ]);
+
+        clearStatus('compare-status');
+        renderComparison(yourStats, friendStats, {
+          your: { leetcode: yourLeetcode, codeforces: yourCodeforces },
+          friend: { leetcode: friendLeetcode, codeforces: friendCodeforces }
+        });
+      } catch (error) {
+        console.error("Error comparing profiles:", error);
+        showStatus('compare-status', `Failed to compare profiles: ${error.message}`, true);
+      }
+    }
+
+    function renderComparison(yourStats, friendStats, usernames) {
+      const resultsContainer = document.getElementById('comparison-results');
+      
+      const comparisonHTML = `
+        <div class="comparison-container">
+          <div class="user-section">
+            <h3>
+              Your Profile
+              ${usernames.your.leetcode ? `<span class="platform-badge leetcode-badge">LeetCode: ${usernames.your.leetcode}</span>` : ''}
+              ${usernames.your.codeforces ? `<span class="platform-badge codeforces-badge">Codeforces: ${usernames.your.codeforces}</span>` : ''}
+            </h3>
+            <div class="stats-container">
+              <div class="stat-box">
+                <h4>Total Activity</h4>
+                <div class="stat-value">${yourStats.totalActivity}</div>
+              </div>
+              <div class="stat-box">
+                <h4>Last 30 Days</h4>
+                <div class="stat-value">${yourStats.last30Days}</div>
+              </div>
+              <div class="stat-box">
+                <h4>Max Streak</h4>
+                <div class="stat-value">${yourStats.maxStreak} days</div>
+              </div>
+              <div class="stat-box">
+                <h4>Current Streak</h4>
+                <div class="stat-value">${yourStats.currentStreak} days</div>
+              </div>
+              ${yourStats.leetcode ? `
+              <div class="stat-box">
+                <h4>LeetCode Submissions</h4>
+                <div class="stat-value">${yourStats.leetcode.totalSubmissions}</div>
+              </div>
+              ` : ''}
+              ${yourStats.codeforces ? `
+              <div class="stat-box">
+                <h4>Codeforces Contests</h4>
+                <div class="stat-value">${yourStats.codeforces.totalContests}</div>
+              </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <div class="user-section">
+            <h3>
+              Friend's Profile
+              ${usernames.friend.leetcode ? `<span class="platform-badge leetcode-badge">LeetCode: ${usernames.friend.leetcode}</span>` : ''}
+              ${usernames.friend.codeforces ? `<span class="platform-badge codeforces-badge">Codeforces: ${usernames.friend.codeforces}</span>` : ''}
+            </h3>
+            <div class="stats-container">
+              <div class="stat-box">
+                <h4>Total Activity</h4>
+                <div class="stat-value">${friendStats.totalActivity}</div>
+              </div>
+              <div class="stat-box">
+                <h4>Last 30 Days</h4>
+                <div class="stat-value">${friendStats.last30Days}</div>
+              </div>
+              <div class="stat-box">
+                <h4>Max Streak</h4>
+                <div class="stat-value">${friendStats.maxStreak} days</div>
+              </div>
+              <div class="stat-box">
+                <h4>Current Streak</h4>
+                <div class="stat-value">${friendStats.currentStreak} days</div>
+              </div>
+              ${friendStats.leetcode ? `
+              <div class="stat-box">
+                <h4>LeetCode Submissions</h4>
+                <div class="stat-value">${friendStats.leetcode.totalSubmissions}</div>
+              </div>
+              ` : ''}
+              ${friendStats.codeforces ? `
+              <div class="stat-box">
+                <h4>Codeforces Contests</h4>
+                <div class="stat-value">${friendStats.codeforces.totalContests}</div>
+              </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <div class="user-section">
+            <h3>Head-to-Head Comparison</h3>
+            <div class="stats-container">
+              <div class="stat-box">
+                <h4>Total Activity Winner</h4>
+                <div class="stat-value" style="color: ${yourStats.totalActivity > friendStats.totalActivity ? '#28a745' : friendStats.totalActivity > yourStats.totalActivity ? '#dc3545' : '#6c757d'}">
+                  ${yourStats.totalActivity > friendStats.totalActivity ? 'You Win!' : friendStats.totalActivity > yourStats.totalActivity ? 'Friend Wins!' : 'Tie!'}
+                </div>
+              </div>
+              <div class="stat-box">
+                <h4>Recent Activity (30 Days)</h4>
+                <div class="stat-value" style="color: ${yourStats.last30Days > friendStats.last30Days ? '#28a745' : friendStats.last30Days > yourStats.last30Days ? '#dc3545' : '#6c757d'}">
+                  ${yourStats.last30Days > friendStats.last30Days ? 'You Win!' : friendStats.last30Days > yourStats.last30Days ? 'Friend Wins!' : 'Tie!'}
+                </div>
+              </div>
+              <div class="stat-box">
+                <h4>Max Streak Winner</h4>
+                <div class="stat-value" style="color: ${yourStats.maxStreak > friendStats.maxStreak ? '#28a745' : friendStats.maxStreak > yourStats.maxStreak ? '#dc3545' : '#6c757d'}">
+                  ${yourStats.maxStreak > friendStats.maxStreak ? 'You Win!' : friendStats.maxStreak > yourStats.maxStreak ? 'Friend Wins!' : 'Tie!'}
+                </div>
+              </div>
+              <div class="stat-box">
+                <h4>Current Streak Winner</h4>
+                <div class="stat-value" style="color: ${yourStats.currentStreak > friendStats.currentStreak ? '#28a745' : friendStats.currentStreak > yourStats.currentStreak ? '#dc3545' : '#6c757d'}">
+                  ${yourStats.currentStreak > friendStats.currentStreak ? 'You Win!' : friendStats.currentStreak > yourStats.currentStreak ? 'Friend Wins!' : 'Tie!'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      resultsContainer.innerHTML = comparisonHTML;
+
+      // Render combined activity graph
+      renderComparisonGraph(yourStats, friendStats, usernames);
+    }
+
+    function renderComparisonGraph(yourStats, friendStats, usernames) {
+      // Combine all data points for visualization
+      const combinedData = [];
+
+      // Add your data
+      if (yourStats.leetcode && yourStats.leetcode.data) {
+        yourStats.leetcode.data.forEach(d => {
+          combinedData.push({
+            date: d.date,
+            value: d.value,
+            source: "Your LeetCode",
+            user: "you"
+          });
+        });
+      }
+
+      if (yourStats.codeforces && yourStats.codeforces.data) {
+        yourStats.codeforces.data.forEach(d => {
+          combinedData.push({
+            date: d.date,
+            value: d.value,
+            source: "Your Codeforces",
+            user: "you"
+          });
+        });
+      }
+
+      // Add friend's data
+      if (friendStats.leetcode && friendStats.leetcode.data) {
+        friendStats.leetcode.data.forEach(d => {
+          combinedData.push({
+            date: d.date,
+            value: d.value,
+            source: "Friend's LeetCode",
+            user: "friend"
+          });
+        });
+      }
+
+      if (friendStats.codeforces && friendStats.codeforces.data) {
+        friendStats.codeforces.data.forEach(d => {
+          combinedData.push({
+            date: d.date,
+            value: d.value,
+            source: "Friend's Codeforces",
+            user: "friend"
+          });
+        });
+      }
+
+      if (combinedData.length === 0) return;
+
+      // Create a new SVG for comparison graph
+      const comparisonGraphContainer = document.createElement('div');
+      comparisonGraphContainer.innerHTML = '<h4 style="text-align: center; margin: 30px 0 20px 0;">Activity Comparison Over Time</h4><svg id="comparison-chart" width="1100" height="400"></svg>';
+      document.getElementById('comparison-results').appendChild(comparisonGraphContainer);
+
+      const width = 1100;
+      const height = 400;
+      const margin = { top: 40, right: 200, bottom: 50, left: 50 };
+
+      const svg = d3.select("#comparison-chart");
+      svg.selectAll("*").remove();
+
+      const last12MonthsData = filterLast12Months(combinedData);
+
+      if (last12MonthsData.length === 0) {
+        svg.append("text")
+          .attr("x", width / 2)
+          .attr("y", height / 2)
+          .attr("text-anchor", "middle")
+          .style("font-size", "16px")
+          .text("No activity data available for comparison in the last 12 months");
+        return;
+      }
+
+      const xScale = d3
+        .scaleTime()
+        .domain(d3.extent(last12MonthsData, (d) => d.date))
+        .range([margin.left, width - margin.right]);
+
+      const yScale = d3
+        .scaleLinear()
+        .domain([0, d3.max(last12MonthsData, (d) => d.value)])
+        .range([height - margin.bottom, margin.top]);
+
+      const colorScale = d3
+        .scaleOrdinal()
+        .domain(["Your LeetCode", "Your Codeforces", "Friend's LeetCode", "Friend's Codeforces"])
+        .range(["#007bff", "#0056b3", "#ff5722", "#d84315"]);
+
+      const xAxis = d3.axisBottom(xScale).ticks(12);
+      const yAxis = d3.axisLeft(yScale);
+
+      svg.append("g")
+        .attr("transform", `translate(0, ${height - margin.bottom})`)
+        .call(xAxis);
+
+      svg.append("g")
+        .attr("transform", `translate(${margin.left}, 0)`)
+        .call(yAxis);
+
+      // Group data by source and render lines
+      const groupedData = d3.group(last12MonthsData, (d) => d.source);
+
+      groupedData.forEach((entries, source) => {
+        if (entries.length > 1) {
+          const line = d3
+            .line()
+            .x((d) => xScale(d.date))
+            .y((d) => yScale(d.value))
+            .curve(d3.curveMonotoneX);
+
+          svg.append("path")
+            .datum(entries.sort((a, b) => a.date - b.date))
+            .attr("fill", "none")
+            .attr("stroke", colorScale(source))
+            .attr("stroke-width", 2)
+            .attr("d", line);
+        }
+
+        // Add points
+        svg.selectAll(`.dot-${source.replace(/[^a-zA-Z0-9]/g, '')}`)
+          .data(entries)
+          .enter()
+          .append("circle")
+          .attr("class", `dot-${source.replace(/[^a-zA-Z0-9]/g, '')}`)
+          .attr("cx", (d) => xScale(d.date))
+          .attr("cy", (d) => yScale(d.value))
+          .attr("r", 4)
+          .attr("fill", colorScale(source))
+          .attr("opacity", 0.8);
+      });
+
+      // Add legend
+      const legend = svg
+        .append("g")
+        .attr("transform", `translate(${width - 190}, ${margin.top})`);
+
+      const legendItems = Array.from(groupedData.keys());
+
+      legend
+        .selectAll("rect")
+        .data(legendItems)
+        .enter()
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", (d, i) => i * 25)
+        .attr("width", 15)
+        .attr("height", 15)
+        .attr("fill", (d) => colorScale(d));
+
+      legend
+        .selectAll("text")
+        .data(legendItems)
+        .enter()
+        .append("text")
+        .attr("x", 20)
+        .attr("y", (d, i) => i * 25 + 12)
+        .style("font-size", "12px")
+        .text((d) => d);
+    }
+
     // Event listeners
     document.getElementById("fetch-button").addEventListener("click", () => {
       const username = document.getElementById("username").value.trim();
@@ -523,6 +1016,7 @@
     });
 
     document.getElementById("fetch-graph-button").addEventListener("click", fetchGraphData);
+    document.getElementById("compare-button").addEventListener("click", compareProfiles);
   </script>
 
 </body>
