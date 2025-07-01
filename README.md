@@ -1,43 +1,37 @@
 # CodeTrack
-CodeTrack - Platform Calendar Heatmap & Consistency Graph
-Description
-CodeTrack is a web application that visualizes your coding consistency and activity over time across multiple platforms like LeetCode and Codeforces. It displays a calendar heatmap of submission activity for a selected platform, as well as a consistency graph based on your performance over time. The app is designed to help users track their coding streaks and improve their overall performance.
 
-**Features**
+# 📊 Coding Activity Analytics Dashboard
 
-**#Platform Calendar Heatmap:**
-Visualizes submission activity over a calendar year.
-Supports platforms like LeetCode and Codeforces.
-Displays a heatmap showing the frequency of submissions over time.
+A full-stack application that visualizes user coding patterns and performance trends using data from LeetCode and Codeforces.
 
-**#Consistency Graph:**
-Fetches and displays your consistency data across different platforms.
-Provides insight into performance trends, such as changes in ratings over time.
+## 🚀 Features
 
-**Requirements**
-A modern web browser (Chrome, Firefox, etc.).
-Active internet connection to fetch data from external APIs.
+- 🔄 **Backend Aggregation**: Node.js + Express.js services to fetch and process data from LeetCode and Codeforces public APIs.
+- 📈 **Interactive Visualizations**: D3.js-powered heatmaps and consistency graphs for intuitive insights into coding activity.
+- ⚡ **Real-Time Analytics**: Efficient data transformation and seamless integration for up-to-date performance tracking.
 
-**Technologies Used**
-HTML: Structure of the web pages.
+## 🛠️ Tech Stack
 
-CSS: Styling of the application.
+- **Backend**: Node.js, Express.js
+- **Frontend**: D3.js, HTML/CSS/JS
+- **Data Sources**: LeetCode API, Codeforces API
 
-JavaScript: Dynamic functionality and API interaction.
+## 📦 Installation
 
-D3.js: Data visualization library for generating the heatmap and consistency graph.
+```bash
+# Clone the repository
+git clone https://github.com/your-username/coding-activity-dashboard.git
+cd coding-activity-dashboard
 
-Bootstrap: For responsive and modern design elements.
+# Install backend dependencies
+cd backend
+npm install
 
-**External Libraries**
-D3.js: D3.js for rendering heatmaps and charts.
+# Start backend server
+npm start
 
-FontAwesome: For using icons in the navigation bar.
+# Open frontend (static HTML/JS)
+cd ../frontend
+# Open index.html in your browser
 
-Bootstrap: For responsive layout and components.
-
-**API Usage**
-LeetCode: Fetches submission data from LeetCode's unofficial API to visualize submission activity over a calendar year.
-
-Codeforces: Fetches rating changes from Codeforces API to visualize consistency over time.
 
