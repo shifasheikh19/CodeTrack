@@ -13,6 +13,8 @@ A full-stack application that visualizes user coding patterns and performance tr
 ![Image Alt](https://github.com/shifasheikh19/CodeTrack/blob/main/Screenshot%202025-07-09%20213450.png?raw=true)
 ![Image Alt](https://github.com/shifasheikh19/CodeTrack/blob/main/Screenshot%202025-07-09%20214044.png?raw=true)
 ![Image Alt](https://github.com/shifasheikh19/CodeTrack/blob/main/Screenshot%202025-07-09%20214639.png?raw=true)
+![Image Alt](https://github.com/shifasheikh19/CodeTrack/blob/main/Screenshot%202025-07-09%20214738.png?raw=true)
+
 
 
 
