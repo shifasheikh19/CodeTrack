@@ -10,6 +10,8 @@ A full-stack application that visualizes user coding patterns and performance tr
 - 📈 **Interactive Visualizations**: D3.js-powered heatmaps and consistency graphs for intuitive insights into coding activity.
 - ⚡ **Real-Time Analytics**: Efficient data transformation and seamless integration for up-to-date performance tracking.
 
+![Image Alt](https://github.com/shifasheikh19/CodeTrack/blob/main/Screenshot%202025-07-09%20213450.png?raw=true)
+
 ## 🛠️ Tech Stack
 
 - **Backend**: Node.js, Express.js
